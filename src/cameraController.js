@@ -26,7 +26,7 @@ export class CameraController {
       this.focusedPlace = null;
     });
 
-    this.setFocus('earth', false);
+    this.setFocus('my_location', false);
   }
 
   setFocus(mode, smooth = true) {
@@ -77,7 +77,7 @@ export class CameraController {
 
       case 'my_location': {
         const userLoc = this.getUserLocation();
-        this.flyToPlace('earth', userLoc.lat, userLoc.lon);
+        this.flyToPlace('earth', userLoc.lat, userLoc.lon, smooth);
         return;
       }
 
@@ -102,13 +102,41 @@ export class CameraController {
     }
   }
 
-  flyToPlace(body, lat, lon) {
+  flyToPlace(body, lat, lon, smooth = true) {
     this.targetMode = body;
     this.focusedPlace = { body, lat, lon };
-    this.isTransitioning = true;
-    this.transitionProgress = 0;
-    this.startCamPos.copy(this.camera.position);
-    this.startTarget.copy(this.controls.target);
+
+    if (smooth) {
+      this.isTransitioning = true;
+      this.transitionProgress = 0;
+      this.startCamPos.copy(this.camera.position);
+      this.startTarget.copy(this.controls.target);
+    } else {
+      this.isTransitioning = false;
+      this.transitionProgress = 1.0;
+      const isTrueScale = (this.sceneManager.scaleMode === 'true');
+      const isEarth = (body === 'earth');
+      const mesh = isEarth ? this.sceneManager.earthMesh : this.sceneManager.moonMesh;
+      const parentGroup = isEarth ? this.sceneManager.earthGroup : this.sceneManager.moonGroup;
+      const viewDist = isEarth ? (isTrueScale ? 3.0 : 2.4) : (isTrueScale ? 0.9 : 0.8);
+
+      const phi = lat * (Math.PI / 180);
+      const lam = lon * (Math.PI / 180);
+      const localPt = new THREE.Vector3(
+        Math.cos(phi) * Math.cos(lam),
+        Math.sin(phi),
+        -Math.cos(phi) * Math.sin(lam)
+      );
+
+      const quat = mesh ? mesh.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+      const normal = localPt.clone().applyQuaternion(quat).normalize();
+      const currentTarget = parentGroup.position.clone();
+      const desiredCamPos = currentTarget.clone().add(normal.multiplyScalar(viewDist));
+
+      this.controls.target.copy(currentTarget);
+      this.camera.position.copy(desiredCamPos);
+      this.controls.update();
+    }
   }
 
   getUserLocation() {

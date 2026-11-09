@@ -207,12 +207,12 @@ export class UserInterface {
         <div class="card glass-panel">
           <div class="card-title">🎥 CAMERA TARGET</div>
           <div class="button-group-grid">
-            <button id="camEarthBtn" class="btn active" title="Focus Earth Orbit [Key: 1]">🌍 Earth</button>
+            <button id="camEarthBtn" class="btn" title="Focus Earth Orbit [Key: 1]">🌍 Earth</button>
             <button id="camMoonBtn" class="btn" title="Focus Lunar Orbit [Key: 2]">🌙 Moon</button>
             <button id="camSystemBtn" class="btn" title="Focus Earth-Moon System [Key: 3]">🪐 System</button>
             <button id="camSunBtn" class="btn" title="Heliocentric View [Key: 4]">☀️ Sun</button>
             <button id="camEarthriseBtn" class="btn full-width" title="View from Moon Surface looking at Earth [Key: 5]">🚀 Apollo Earthrise</button>
-            <button id="camMyLocationBtn" class="btn full-width" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.15);" title="Focus My Local Country on Earth [Key: 0]">📍 My Location (India / Local)</button>
+            <button id="camMyLocationBtn" class="btn full-width active" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.15);" title="Focus My Local Country on Earth [Key: 0]">📍 My Location (India / Local)</button>
           </div>
         </div>
 

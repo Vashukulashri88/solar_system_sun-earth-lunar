@@ -30,12 +30,16 @@ async function verify() {
 
   const page = await browser.newPage();
   const errors = [];
-  page.on('pageerror', err => errors.push(err.toString()));
+  page.on('console', msg => console.log('  [Browser]:', msg.type(), msg.text()));
+  page.on('pageerror', err => {
+    console.error('  [PageError]:', err);
+    errors.push(err.toString());
+  });
 
   console.log('Navigating to http://localhost:8080...');
-  await page.goto('http://localhost:8080/', { waitUntil: 'networkidle0', timeout: 30000 });
+  await page.goto('http://localhost:8080/', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-  await new Promise(r => setTimeout(r, 2000));
+  await page.waitForSelector('#utcClock', { timeout: 10000 });
 
   // 1. Verify Clock Display (UTC + Local)
   const clockText = await page.$eval('#utcClock', el => el.innerText);
@@ -80,7 +84,7 @@ async function verify() {
 
   // 5. Verify Sun Mesh / Corona occlusion in scene
   const sunOcclusion = await page.evaluate(() => {
-    const app = window.__simApp;
+    const app = window.__sim;
     if (!app || !app.sceneManager) return null;
     const sm = app.sceneManager;
     return {
@@ -90,6 +94,10 @@ async function verify() {
     };
   });
   console.log('Sun Occlusion Info:', sunOcclusion);
+  if (!sunOcclusion) throw new Error('Could not access window.__sim!');
+  if (sunOcclusion.sunMeshVisible !== false || sunOcclusion.coronaVisible !== false) {
+    throw new Error(`Expected Sun and Corona to be occluded when looking at India at night, got: ${JSON.stringify(sunOcclusion)}`);
+  }
 
   // Take screenshot of India at night
   const screenshotPath = 'C:\\Users\\ckceg\\.gemini\\antigravity\\scratch\\earth-sun-moon-orbit-sim\\india_night_verified.png';

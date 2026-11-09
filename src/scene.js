@@ -469,39 +469,31 @@ export class SolarSystemScene {
     // Update Mesh Positions and Scales
     this.sunGroup.position.copy(sunPos);
 
-    if (isVisual) {
-      const camDistToEarth = this.camera ? this.camera.position.distanceTo(earthPos) : 20;
-      if (camDistToEarth < 10.0) {
-        // When focused close to Earth, check whether Earth occludes the Sun from camera perspective
-        const camToSun = new THREE.Vector3().subVectors(sunPos, this.camera.position);
-        const camToEarth = new THREE.Vector3().subVectors(earthPos, this.camera.position);
-        const dCamEarth = camToEarth.length();
-        const dCamSun = camToSun.length();
-        const angleCam = camToEarth.normalize().angleTo(camToSun.normalize());
-        const earthAngRadius = Math.asin(Math.min(1.0, (this.earthRadius * earthScale * 1.05) / Math.max(1.05, dCamEarth)));
+    const camDistToEarth = this.camera ? this.camera.position.distanceTo(earthPos) : 20;
+    const camToSun = new THREE.Vector3().subVectors(sunPos, this.camera ? this.camera.position : new THREE.Vector3(0, 0, 0));
+    const camToEarth = new THREE.Vector3().subVectors(earthPos, this.camera ? this.camera.position : new THREE.Vector3(0, 0, 0));
+    const dCamEarth = camToEarth.length();
+    const dCamSun = camToSun.length();
+    const angleCam = camToEarth.clone().normalize().angleTo(camToSun.clone().normalize());
+    const earthAngRadius = Math.asin(Math.min(1.0, (this.earthRadius * earthScale * 1.05) / Math.max(1.05, dCamEarth)));
 
-        if (dCamSun > dCamEarth && angleCam < (earthAngRadius + 0.18)) {
-          // Sun is directly behind the body of Earth from this viewpoint
-          this.sunMesh.visible = false;
-          this.coronaSprite.visible = false;
-        } else {
-          this.sunMesh.visible = true;
-          this.coronaSprite.visible = true;
-          const scaleClose = Math.min(sunScale, 1.0);
-          this.sunMesh.scale.set(scaleClose / 4.5, scaleClose / 4.5, scaleClose / 4.5);
-          this.coronaSprite.scale.set(scaleClose * 3.0, scaleClose * 3.0, 1);
-        }
-      } else {
-        this.sunMesh.visible = true;
-        this.coronaSprite.visible = true;
-        this.sunMesh.scale.set(sunScale / 4.5, sunScale / 4.5, sunScale / 4.5);
-        this.coronaSprite.scale.set(sunScale * 4.5, sunScale * 4.5, 1);
-      }
+    // When Earth is between the camera and the Sun (viewing night hemisphere)
+    const isOccludedByEarth = (dCamSun > dCamEarth) && (camDistToEarth < 25.0) && (angleCam < (earthAngRadius + 0.22));
+
+    if (isOccludedByEarth) {
+      this.sunMesh.visible = false;
+      this.coronaSprite.visible = false;
     } else {
       this.sunMesh.visible = true;
       this.coronaSprite.visible = true;
-      this.sunMesh.scale.set(sunScale / 4.5, sunScale / 4.5, sunScale / 4.5);
-      this.coronaSprite.scale.set(sunScale * 4.5, sunScale * 4.5, 1);
+      if (isVisual && camDistToEarth < 12.0) {
+        const scaleClose = Math.min(sunScale, 1.0);
+        this.sunMesh.scale.set(scaleClose / 4.5, scaleClose / 4.5, scaleClose / 4.5);
+        this.coronaSprite.scale.set(scaleClose * 3.0, scaleClose * 3.0, 1);
+      } else {
+        this.sunMesh.scale.set(sunScale / 4.5, sunScale / 4.5, sunScale / 4.5);
+        this.coronaSprite.scale.set(sunScale * 4.5, sunScale * 4.5, 1);
+      }
     }
 
     this.earthGroup.position.copy(earthPos);
@@ -621,7 +613,7 @@ export class SolarSystemScene {
     const moonShadowDir = new THREE.Vector3().subVectors(moonPos, sunPos).normalize();
     this.moonUmbraCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), moonShadowDir);
 
-    const camDistToEarth = this.camera ? this.camera.position.distanceTo(earthPos) : 20;
+    // camDistToEarth already declared above
     const camDistToMoon = this.camera ? this.camera.position.distanceTo(moonPos) : 20;
     const isFocusEarth = this.cameraController ? (this.cameraController.targetMode === 'earth') : false;
     const isFocusMoon = this.cameraController ? (this.cameraController.targetMode === 'moon') : false;

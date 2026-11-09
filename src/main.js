@@ -62,6 +62,15 @@ window.addEventListener('DOMContentLoaded', () => {
   placesManager.load().then((success) => {
     if (success) {
       labelsManager.initLabels(placesManager);
+      if (cameraController.targetMode === 'my_location' || cameraController.targetMode === 'earth') {
+        const userLoc = cameraController.getUserLocation();
+        const state = getCelestialState(timeController.simulatedDate);
+        const info = placesManager.inspectEarth(userLoc.lat, userLoc.lon, state);
+        if (info) {
+          pickingManager.selectPlaceByCoords('earth', userLoc.lat, userLoc.lon, info);
+          ui.showPlaceInspector(info);
+        }
+      }
     }
   });
 
