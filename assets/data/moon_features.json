@@ -1,0 +1,449 @@
+{
+  "landingSites": [
+    {
+      "name": "Apollo 11",
+      "mission": "Apollo 11 (NASA)",
+      "date": "1969-07-20",
+      "lat": 0.67408,
+      "lon": 23.47297,
+      "category": "crewed",
+      "description": "First human lunar landing. Tranquility Base, Neil Armstrong & Buzz Aldrin."
+    },
+    {
+      "name": "Apollo 12",
+      "mission": "Apollo 12 (NASA)",
+      "date": "1969-11-19",
+      "lat": -3.01239,
+      "lon": -23.42157,
+      "category": "crewed",
+      "description": "Ocean of Storms, pinpoint landing next to Surveyor 3."
+    },
+    {
+      "name": "Apollo 14",
+      "mission": "Apollo 14 (NASA)",
+      "date": "1971-02-05",
+      "lat": -3.64530,
+      "lon": -17.47136,
+      "category": "crewed",
+      "description": "Fra Mauro formation, Alan Shepard & Edgar Mitchell."
+    },
+    {
+      "name": "Apollo 15",
+      "mission": "Apollo 15 (NASA)",
+      "date": "1971-07-30",
+      "lat": 26.13222,
+      "lon": 3.63386,
+      "category": "crewed",
+      "description": "Hadley-Apennine region, first Lunar Roving Vehicle (LRV)."
+    },
+    {
+      "name": "Apollo 16",
+      "mission": "Apollo 16 (NASA)",
+      "date": "1972-04-21",
+      "lat": -8.97301,
+      "lon": 15.49812,
+      "category": "crewed",
+      "description": "Descartes Highlands, Cayley formation exploration."
+    },
+    {
+      "name": "Apollo 17",
+      "mission": "Apollo 17 (NASA)",
+      "date": "1972-12-11",
+      "lat": 20.19080,
+      "lon": 30.77168,
+      "category": "crewed",
+      "description": "Taurus-Littrow valley, Eugene Cernan & Harrison Schmitt (geologist)."
+    },
+    {
+      "name": "Luna 2",
+      "mission": "Luna 2 (USSR)",
+      "date": "1959-09-13",
+      "lat": 29.1,
+      "lon": 0.0,
+      "category": "impact",
+      "description": "First human-made spacecraft to reach the Moon's surface (Mare Imbrium)."
+    },
+    {
+      "name": "Luna 9",
+      "mission": "Luna 9 (USSR)",
+      "date": "1966-02-03",
+      "lat": 7.08,
+      "lon": -64.37,
+      "category": "robotic_lander",
+      "description": "First survivable soft landing on the Moon (Oceanus Procellarum)."
+    },
+    {
+      "name": "Luna 16",
+      "mission": "Luna 16 (USSR)",
+      "date": "1970-09-20",
+      "lat": -0.68,
+      "lon": 56.30,
+      "category": "robotic_sample_return",
+      "description": "First automated robotic sample return from another celestial body (Mare Fecunditatis)."
+    },
+    {
+      "name": "Luna 17 (Lunokhod 1)",
+      "mission": "Luna 17 (USSR)",
+      "date": "1970-11-17",
+      "lat": 38.28,
+      "lon": -35.00,
+      "category": "rover",
+      "description": "First successful robotic lunar rover (Mare Imbrium)."
+    },
+    {
+      "name": "Luna 21 (Lunokhod 2)",
+      "mission": "Luna 21 (USSR)",
+      "date": "1973-01-15",
+      "lat": 25.85,
+      "lon": 30.45,
+      "category": "rover",
+      "description": "Second robotic Soviet rover (Le Monnier crater)."
+    },
+    {
+      "name": "Luna 24",
+      "mission": "Luna 24 (USSR)",
+      "date": "1976-08-18",
+      "lat": 12.75,
+      "lon": 62.20,
+      "category": "robotic_sample_return",
+      "description": "Final Luna mission sample return (Mare Crisium)."
+    },
+    {
+      "name": "Surveyor 1",
+      "mission": "Surveyor 1 (NASA)",
+      "date": "1966-06-02",
+      "lat": -2.47,
+      "lon": -43.32,
+      "category": "robotic_lander",
+      "description": "First American soft landing on the Moon (Oceanus Procellarum)."
+    },
+    {
+      "name": "Surveyor 3",
+      "mission": "Surveyor 3 (NASA)",
+      "date": "1967-04-20",
+      "lat": -3.02,
+      "lon": -23.42,
+      "category": "robotic_lander",
+      "description": "Visited by Apollo 12 astronauts Pete Conrad and Alan Bean."
+    },
+    {
+      "name": "Chang'e 3 (Yutu)",
+      "mission": "Chang'e 3 (CNSA)",
+      "date": "2013-12-14",
+      "lat": 44.12,
+      "lon": -19.51,
+      "category": "rover",
+      "description": "First Chinese lunar lander & Yutu rover (Mare Imbrium)."
+    },
+    {
+      "name": "Chang'e 4 (Yutu-2)",
+      "mission": "Chang'e 4 (CNSA)",
+      "date": "2019-01-03",
+      "lat": -45.44,
+      "lon": 177.60,
+      "category": "far_side_rover",
+      "description": "First soft landing on the lunar FAR SIDE (Von Kármán crater, South Pole-Aitken basin)."
+    },
+    {
+      "name": "Chang'e 5",
+      "mission": "Chang'e 5 (CNSA)",
+      "date": "2020-12-01",
+      "lat": 43.06,
+      "lon": -51.92,
+      "category": "robotic_sample_return",
+      "description": "Chinese lunar sample return (Mons Rümker, Oceanus Procellarum)."
+    },
+    {
+      "name": "Chang'e 6",
+      "mission": "Chang'e 6 (CNSA)",
+      "date": "2024-06-01",
+      "lat": -41.64,
+      "lon": -153.99,
+      "category": "far_side_sample_return",
+      "description": "First ever sample return from the lunar FAR SIDE (Apollo crater basin)."
+    },
+    {
+      "name": "Chandrayaan-3 (Shiv Shakti)",
+      "mission": "Chandrayaan-3 (ISRO)",
+      "date": "2023-08-23",
+      "lat": -69.37,
+      "lon": 32.32,
+      "category": "south_pole_lander",
+      "description": "First spacecraft to soft-land near the Lunar South Pole region. Vikram lander & Pragyan rover at Shiv Shakti Point."
+    },
+    {
+      "name": "SLIM",
+      "mission": "SLIM (JAXA)",
+      "date": "2024-01-19",
+      "lat": -13.316,
+      "lon": 25.251,
+      "category": "precision_lander",
+      "description": "Smart Lander for Investigating Moon (Japan), pinpoint landing within 55 meters at Shioli crater."
+    }
+  ],
+  "maria": [
+    {
+      "name": "Mare Tranquillitatis",
+      "lat": 8.5,
+      "lon": 31.4,
+      "diameterKm": 873,
+      "description": "Sea of Tranquility. Site of Apollo 11 first moon landing."
+    },
+    {
+      "name": "Mare Serenitatis",
+      "lat": 28.0,
+      "lon": 17.5,
+      "diameterKm": 707,
+      "description": "Sea of Serenity. Prominent circular basin east of Mare Imbrium."
+    },
+    {
+      "name": "Mare Imbrium",
+      "lat": 32.8,
+      "lon": -15.6,
+      "diameterKm": 1123,
+      "description": "Sea of Rains. One of the largest impact craters in the Solar System, ringed by mountains."
+    },
+    {
+      "name": "Oceanus Procellarum",
+      "lat": 18.4,
+      "lon": -57.4,
+      "diameterKm": 2568,
+      "description": "Ocean of Storms. The largest lunar mare, spanning over 2,500 km across the western near side."
+    },
+    {
+      "name": "Mare Crisium",
+      "lat": 17.0,
+      "lon": 59.1,
+      "diameterKm": 555,
+      "description": "Sea of Crises. Distinct isolated oval basin on the eastern near-side limb."
+    },
+    {
+      "name": "Mare Fecunditatis",
+      "lat": -7.8,
+      "lon": 51.3,
+      "diameterKm": 909,
+      "description": "Sea of Fecundity. Eastern basin containing Messier craters."
+    },
+    {
+      "name": "Mare Nectaris",
+      "lat": -15.2,
+      "lon": 35.5,
+      "diameterKm": 333,
+      "description": "Sea of Nectar. Small circular mare south of Mare Tranquillitatis."
+    },
+    {
+      "name": "Mare Nubium",
+      "lat": -21.3,
+      "lon": -16.6,
+      "diameterKm": 715,
+      "description": "Sea of Clouds. Pre-Imbrian basin southeast of Oceanus Procellarum."
+    },
+    {
+      "name": "Mare Humorum",
+      "lat": -24.4,
+      "lon": -38.6,
+      "diameterKm": 389,
+      "description": "Sea of Moisture. Circular basin bordered by Gassendi crater."
+    },
+    {
+      "name": "Mare Vaporum",
+      "lat": 13.3,
+      "lon": 3.6,
+      "diameterKm": 245,
+      "description": "Sea of Vapors. Located near the center of the lunar disk."
+    },
+    {
+      "name": "Mare Frigoris",
+      "lat": 56.0,
+      "lon": 1.4,
+      "diameterKm": 1596,
+      "description": "Sea of Cold. Long arcing band across the far northern near side."
+    },
+    {
+      "name": "Mare Orientale",
+      "lat": -19.4,
+      "lon": -92.8,
+      "diameterKm": 930,
+      "description": "Eastern Sea. Spectacular bullseye multi-ring impact basin on the western limb."
+    },
+    {
+      "name": "Mare Moscoviense",
+      "lat": 27.3,
+      "lon": 147.9,
+      "diameterKm": 277,
+      "description": "Sea of Moscow. Rare dark basaltic mare basin on the lunar far side."
+    },
+    {
+      "name": "Mare Ingenii",
+      "lat": -33.7,
+      "lon": 163.5,
+      "diameterKm": 318,
+      "description": "Sea of Cleverness. Located in the southern far-side hemisphere."
+    }
+  ],
+  "craters": [
+    {
+      "name": "Tycho",
+      "lat": -43.31,
+      "lon": -11.36,
+      "diameterKm": 85,
+      "description": "Prominent young impact crater with ray system extending over 1,500 km across the near side."
+    },
+    {
+      "name": "Copernicus",
+      "lat": 9.62,
+      "lon": -20.08,
+      "diameterKm": 93,
+      "description": "Archetypal impact crater with terraced walls, multiple central peaks, and extensive bright rays."
+    },
+    {
+      "name": "Kepler",
+      "lat": 8.12,
+      "lon": -38.01,
+      "diameterKm": 32,
+      "description": "Bright rayed crater in Oceanus Procellarum named after Johannes Kepler."
+    },
+    {
+      "name": "Aristarchus",
+      "lat": 23.73,
+      "lon": -47.49,
+      "diameterKm": 40,
+      "description": "Brightest major geological formation on the Moon, with an albedo nearly double the average."
+    },
+    {
+      "name": "Plato",
+      "lat": 51.62,
+      "lon": -9.38,
+      "diameterKm": 101,
+      "description": "Dark lava-flooded crater on the northern border of Mare Imbrium."
+    },
+    {
+      "name": "Archimedes",
+      "lat": 29.72,
+      "lon": -3.99,
+      "diameterKm": 83,
+      "description": "Large flat-floored crater in eastern Mare Imbrium."
+    },
+    {
+      "name": "Clavius",
+      "lat": -58.40,
+      "lon": -14.40,
+      "diameterKm": 225,
+      "description": "One of the largest craters on the Moon, featuring a curved chain of diminishing sub-craters."
+    },
+    {
+      "name": "Eratosthenes",
+      "lat": 14.50,
+      "lon": -11.30,
+      "diameterKm": 58,
+      "description": "Well-defined crater marking the western terminus of the Montes Apenninus."
+    },
+    {
+      "name": "Ptolemaeus",
+      "lat": -9.20,
+      "lon": -1.80,
+      "diameterKm": 153,
+      "description": "Ancient pre-Imbrian walled plain near the central meridian."
+    },
+    {
+      "name": "Alphonsus",
+      "lat": -13.40,
+      "lon": -2.80,
+      "diameterKm": 119,
+      "description": "Famous crater with central peak and dark mantle pyroclastic deposits (possible lunar volcanism)."
+    },
+    {
+      "name": "Theophilus",
+      "lat": -11.40,
+      "lon": 26.40,
+      "diameterKm": 100,
+      "description": "Prominent crater with high triple central peaks on the northwest edge of Mare Nectaris."
+    },
+    {
+      "name": "Langrenus",
+      "lat": -8.90,
+      "lon": 61.10,
+      "diameterKm": 132,
+      "description": "Prominent impact crater near the eastern limb with complex terraced walls."
+    },
+    {
+      "name": "Grimaldi",
+      "lat": -5.20,
+      "lon": -68.60,
+      "diameterKm": 222,
+      "description": "Near the western limb, notable for having one of the darkest basaltic floors on the Moon."
+    },
+    {
+      "name": "Gassendi",
+      "lat": -17.50,
+      "lon": -39.90,
+      "diameterKm": 110,
+      "description": "Large floor-fractured crater on the northern edge of Mare Humorum with complex rilles."
+    },
+    {
+      "name": "Tsiolkovskiy",
+      "lat": -20.40,
+      "lon": 129.10,
+      "diameterKm": 180,
+      "description": "Spectacular far-side crater with intensely dark mare floor and brilliant white central peak."
+    },
+    {
+      "name": "Jackson",
+      "lat": 22.40,
+      "lon": -163.10,
+      "diameterKm": 71,
+      "description": "Far-side rayed crater with asymmetric ray system visible from lunar orbit."
+    },
+    {
+      "name": "Shackleton",
+      "lat": -89.90,
+      "lon": 0.00,
+      "diameterKm": 21,
+      "description": "Lunar South Pole crater whose permanently shadowed interior contains water ice deposits."
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Montes Apenninus",
+      "lat": 18.9,
+      "lon": -3.7,
+      "lengthKm": 600,
+      "description": "Spectacular rugged mountain range rising up to 5,000 m above Mare Imbrium."
+    },
+    {
+      "name": "Montes Caucasus",
+      "lat": 38.4,
+      "lon": 10.0,
+      "lengthKm": 445,
+      "description": "Rugged range separating Mare Imbrium from Mare Serenitatis."
+    },
+    {
+      "name": "Montes Alpes",
+      "lat": 46.4,
+      "lon": -0.8,
+      "lengthKm": 281,
+      "description": "Northern mountain range bisected by the dramatic Vallis Alpes (Alpine Valley)."
+    },
+    {
+      "name": "Mons Huygens",
+      "lat": 20.0,
+      "lon": -2.9,
+      "heightM": 5500,
+      "description": "Highest mountain peak on the Moon, located in Montes Apenninus."
+    },
+    {
+      "name": "Mons Hadley",
+      "lat": 26.5,
+      "lon": 4.7,
+      "heightM": 4200,
+      "description": "Towering peak in Montes Apenninus bordering Rima Hadley and the Apollo 15 landing site."
+    },
+    {
+      "name": "Mons Rümker",
+      "lat": 40.8,
+      "lon": -58.1,
+      "diameterKm": 70,
+      "description": "Volcanic complex in Oceanus Procellarum, site of the Chang'e 5 landing."
+    }
+  ]
+}

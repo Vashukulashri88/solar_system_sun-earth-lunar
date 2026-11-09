@@ -1,0 +1,16 @@
+{
+  "name": "earth-sun-moon-orbit-sim",
+  "version": "1.0.0",
+  "description": "Real-time physically accurate Earth-Sun-Moon 3D simulation",
+  "main": "src/ephemeris.js",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/test_ephemeris.js && node tests/test_integration.js && node tests/test_v2_features.js && node tests/test_round2_review.js && node tests/test_server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "puppeteer-core": "^25.16.0",
+    "three": "^0.170.0"
+  }
+}
