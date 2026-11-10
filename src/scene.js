@@ -375,10 +375,10 @@ export class SolarSystemScene {
   }
 
   createApsidesMarkers() {
-    this.perihelionMarker = this.createApsisMarker(0xf59e0b, 0.28, 'PERIHELION', 'Earth Closest to Sun (~147.1M km)');
-    this.aphelionMarker = this.createApsisMarker(0x38bdf8, 0.28, 'APHELION', 'Earth Farthest from Sun (~152.1M km)');
-    this.perigeeMarker = this.createApsisMarker(0x34d399, 0.16, 'PERIGEE', 'Moon Closest to Earth (~363k km)');
-    this.apogeeMarker = this.createApsisMarker(0xa78bfa, 0.16, 'APOGEE', 'Moon Farthest from Earth (~405k km)');
+    this.perihelionMarker = this.createApsisMarker(0xf59e0b, 0.35, 'PERIHELION', 'Earth Closest to Sun (~147.1M km)', { w: 6.2, h: 2.07 }, 2.0);
+    this.aphelionMarker = this.createApsisMarker(0x38bdf8, 0.35, 'APHELION', 'Earth Farthest from Sun (~152.1M km)', { w: 6.2, h: 2.07 }, 2.0);
+    this.perigeeMarker = this.createApsisMarker(0x34d399, 0.16, 'PERIGEE', 'Moon Closest to Earth (~363k km)', { w: 2.5, h: 0.85 }, 0.9);
+    this.apogeeMarker = this.createApsisMarker(0xa78bfa, 0.16, 'APOGEE', 'Moon Farthest from Earth (~405k km)', { w: 2.5, h: 0.85 }, 0.9);
 
     this.scene.add(this.perihelionMarker);
     this.scene.add(this.aphelionMarker);
@@ -389,37 +389,39 @@ export class SolarSystemScene {
     this.lastApogeeRel = new THREE.Vector3();
   }
 
-  createApsisMarker(colorHex, radius, title, subtitle) {
+  createApsisMarker(colorHex, radius, title, subtitle, spriteScale = { w: 3.2, h: 1.07 }, yOffset = 1.2) {
     const group = new THREE.Group();
 
     // Central glowing sphere
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 16, 16),
-      new THREE.MeshBasicMaterial({ color: colorHex, depthTest: false, transparent: true, opacity: 0.95 })
+      new THREE.MeshBasicMaterial({ color: colorHex, depthTest: true, depthWrite: false, transparent: true, opacity: 0.95 })
     );
     group.add(sphere);
 
     // Flat ring in ecliptic plane
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(radius * 1.4, radius * 2.2, 32),
-      new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 })
+      new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, depthTest: true, depthWrite: false, transparent: true, opacity: 0.8 })
     );
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
 
     // Billboard Text Sprite
     if (typeof document !== 'undefined') {
-      const sprite = this.createApsisLabelSprite(title, subtitle, colorHex);
-      sprite.position.y = radius + 1.2;
+      const sprite = this.createApsisLabelSprite(title, subtitle, colorHex, spriteScale);
+      sprite.position.y = radius + yOffset;
       group.add(sprite);
       group.userData.sprite = sprite;
     }
 
     group.userData.baseRadius = radius;
+    group.userData.title = title;
+    group.userData.colorHex = colorHex;
     return group;
   }
 
-  createApsisLabelSprite(title, subtitle, colorHex) {
+  createApsisLabelSprite(title, subtitle, colorHex, spriteScale = { w: 3.2, h: 1.07 }) {
     const canvas = document.createElement('canvas');
     canvas.width = 384;
     canvas.height = 128;
@@ -459,11 +461,51 @@ export class SolarSystemScene {
     const spriteMat = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
-      depthTest: false
+      depthTest: true,
+      depthWrite: false
     });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(3.2, 1.07, 1);
+    sprite.scale.set(spriteScale.w, spriteScale.h, 1);
+    sprite.renderOrder = 999;
     return sprite;
+  }
+
+  updateApsisSubtitle(markerGroup, title, subtitle, colorHex) {
+    if (typeof document === 'undefined') return;
+    if (!markerGroup || !markerGroup.userData || !markerGroup.userData.sprite) return;
+    const sprite = markerGroup.userData.sprite;
+    if (!sprite.material || !sprite.material.map || !sprite.material.map.image) return;
+    const canvas = sprite.material.map.image;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const colorHexStr = '#' + colorHex.toString(16).padStart(6, '0');
+    const r = 16, w = 376, h = 96, x = 4, y = 16;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.strokeStyle = colorHexStr;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = colorHexStr;
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, canvas.width / 2, y + 40);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(subtitle, canvas.width / 2, y + 74);
+
+    sprite.material.map.needsUpdate = true;
   }
 
   /**
@@ -528,11 +570,15 @@ export class SolarSystemScene {
       this.perihelionMarker.position.set(perihelionX, perihelionY, perihelionZ);
       const mScale = isVisual ? 1.0 : 200.0;
       this.perihelionMarker.scale.set(mScale, mScale, mScale);
+      const pKm = (minEarthDist * ASTRONOMICAL_CONSTANTS.AU_KM / 1e6).toFixed(1);
+      this.updateApsisSubtitle(this.perihelionMarker, 'PERIHELION', `Earth Closest: ${pKm}M km (${minEarthDist.toFixed(4)} AU)`, 0xf59e0b);
     }
     if (this.aphelionMarker) {
       this.aphelionMarker.position.set(aphelionX, aphelionY, aphelionZ);
       const mScale = isVisual ? 1.0 : 200.0;
       this.aphelionMarker.scale.set(mScale, mScale, mScale);
+      const aKm = (maxEarthDist * ASTRONOMICAL_CONSTANTS.AU_KM / 1e6).toFixed(1);
+      this.updateApsisSubtitle(this.aphelionMarker, 'APHELION', `Earth Farthest: ${aKm}M km (${maxEarthDist.toFixed(4)} AU)`, 0x38bdf8);
     }
 
     // 2. SAMPLE MOON GEOCENTRIC ORBIT PATH (~27.32 days centered on current epoch)
@@ -591,10 +637,12 @@ export class SolarSystemScene {
     if (this.perigeeMarker) {
       const mScale = isVisual ? 1.0 : 2.5;
       this.perigeeMarker.scale.set(mScale, mScale, mScale);
+      this.updateApsisSubtitle(this.perigeeMarker, 'PERIGEE', `Moon Closest: ${Math.round(minMoonDist).toLocaleString()} km`, 0x34d399);
     }
     if (this.apogeeMarker) {
       const mScale = isVisual ? 1.0 : 2.5;
       this.apogeeMarker.scale.set(mScale, mScale, mScale);
+      this.updateApsisSubtitle(this.apogeeMarker, 'APOGEE', `Moon Farthest: ${Math.round(maxMoonDist).toLocaleString()} km`, 0xa78bfa);
     }
   }
 

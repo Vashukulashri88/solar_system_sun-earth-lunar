@@ -134,9 +134,15 @@ async function runVerification() {
     console.log(`  - Aphelion distance: ${orbitInfo.aphelionDist.toFixed(3)} units`);
     console.log(`  - Perihelion/Aphelion Difference: ${(orbitInfo.aphelionDist - orbitInfo.perihelionDist).toFixed(3)} units`);
 
-    // 1. Click Sun Camera Target button to focus on Sun and see the Earth orbital ellipse
+    // 1. Focus on Sun and elevate camera to frame entire Earth Keplerian elliptical orbit
     await page.evaluate(() => {
       document.getElementById('camSunBtn').click();
+      const sim = window.__sim;
+      if (sim && sim.cameraController) {
+        sim.cameraController.camera.position.set(0, 52, 60);
+        sim.cameraController.controls.target.set(0, 0, 0);
+        sim.cameraController.controls.update();
+      }
     });
     await new Promise(r => setTimeout(r, 2000));
     const shotHeliocentric = path.join(SCREENSHOT_DIR, 'heliocentric_earth_orbit_elliptical.png');
@@ -152,14 +158,21 @@ async function runVerification() {
     await page.screenshot({ path: shotSystem });
     console.log(`  ✓ Saved system orbit screenshot: ${shotSystem}`);
 
-    // 3. Click Earth View button to capture Moon's inclined perturbed elliptical orbit
+    // 3. Elevate angle to clearly showcase Moon's 5.15° inclined perturbed ellipse around Earth
     await page.evaluate(() => {
-      document.getElementById('camEarthBtn').click();
+      const sim = window.__sim;
+      if (sim && sim.cameraController) {
+        sim.cameraController.setFocus('system', false);
+        const earthPos = sim.sceneManager.earthGroup.position;
+        sim.cameraController.camera.position.set(earthPos.x + 10, earthPos.y + 14, earthPos.z + 18);
+        sim.cameraController.controls.target.copy(earthPos);
+        sim.cameraController.controls.update();
+      }
     });
     await new Promise(r => setTimeout(r, 2000));
     const shotEarth = path.join(SCREENSHOT_DIR, 'earth_moon_elliptical_orbit.png');
     await page.screenshot({ path: shotEarth });
-    console.log(`  ✓ Saved Earth-Moon orbit screenshot: ${shotEarth}`);
+    console.log(`  ✓ Saved Earth-Moon inclined orbit screenshot: ${shotEarth}`);
 
     // 4. Test toggle apsides in UI
     const toggleApsidesChecked = await page.evaluate(() => {

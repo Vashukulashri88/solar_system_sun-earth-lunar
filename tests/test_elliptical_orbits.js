@@ -136,7 +136,14 @@ const aphPos = scene.aphelionMarker.position;
 const aphDist = aphPos.length();
 assert(Math.abs(aphDist - maxSunDist) < 0.05, `Aphelion marker sits at max distance ${maxSunDist.toFixed(3)} (got ${aphDist.toFixed(3)})`);
 
-console.log('  ✓ PASS: Perihelion and Aphelion markers sit accurately at orbit extrema');
+const earthPos = scene.earthGroup.position;
+const perigeeDistToEarth = scene.perigeeMarker.position.distanceTo(earthPos);
+assert(Math.abs(perigeeDistToEarth - minMoonDist) < 0.05, `Perigee marker sits at min distance to Earth ${minMoonDist.toFixed(3)} (got ${perigeeDistToEarth.toFixed(3)})`);
+
+const apogeeDistToEarth = scene.apogeeMarker.position.distanceTo(earthPos);
+assert(Math.abs(apogeeDistToEarth - maxMoonDist) < 0.05, `Apogee marker sits at max distance to Earth ${maxMoonDist.toFixed(3)} (got ${apogeeDistToEarth.toFixed(3)})`);
+
+console.log('  ✓ PASS: Perihelion, Aphelion, Perigee, and Apogee markers sit accurately at orbit extrema');
 
 // Test 5: Visibility Toggles
 console.log('\nTest 5: Orbit and Apsides Visibility Toggles');
@@ -145,17 +152,26 @@ scene.update(state, 0);
 assert(!scene.earthOrbitLine.visible, 'earthOrbitLine is hidden when showOrbits is false');
 assert(!scene.moonOrbitLine.visible, 'moonOrbitLine is hidden when showOrbits is false');
 assert(!scene.perihelionMarker.visible, 'perihelionMarker is hidden when showOrbits is false');
+assert(!scene.aphelionMarker.visible, 'aphelionMarker is hidden when showOrbits is false');
+assert(!scene.perigeeMarker.visible, 'perigeeMarker is hidden when showOrbits is false');
+assert(!scene.apogeeMarker.visible, 'apogeeMarker is hidden when showOrbits is false');
 
 scene.showOrbits = true;
 scene.showApsides = false;
 scene.update(state, 0);
 assert(scene.earthOrbitLine.visible, 'earthOrbitLine is visible');
 assert(!scene.perihelionMarker.visible, 'perihelionMarker is hidden when showApsides is false');
+assert(!scene.aphelionMarker.visible, 'aphelionMarker is hidden when showApsides is false');
+assert(!scene.perigeeMarker.visible, 'perigeeMarker is hidden when showApsides is false');
+assert(!scene.apogeeMarker.visible, 'apogeeMarker is hidden when showApsides is false');
 
 scene.showApsides = true;
 scene.update(state, 0);
 assert(scene.perihelionMarker.visible, 'perihelionMarker is visible when both are true');
-console.log('  ✓ PASS: Visibility toggles work as expected');
+assert(scene.aphelionMarker.visible, 'aphelionMarker is visible when both are true');
+assert(scene.perigeeMarker.visible, 'perigeeMarker is visible when both are true');
+assert(scene.apogeeMarker.visible, 'apogeeMarker is visible when both are true');
+console.log('  ✓ PASS: Visibility toggles work as expected for all orbits and apsides');
 
 // Test 6: 1:1 Metric Scale Mode Switch
 console.log('\nTest 6: 1:1 Metric True Scale Mode');
@@ -165,8 +181,27 @@ scene.update(state, 0);
 const trueEarthAttr = scene.earthOrbitLine.geometry.attributes.position;
 const trueMinDist = Math.sqrt(trueEarthAttr.getX(0)**2 + trueEarthAttr.getY(0)**2 + trueEarthAttr.getZ(0)**2);
 // In true scale, distance in units = km / 10,000 -> ~14,700 to 15,200 units
-assert(trueMinDist > 14000 && trueMinDist < 16000, `True scale orbit size is in 10,000 km units (got ${trueMinDist.toFixed(1)})`);
-console.log('  ✓ PASS: True scale mode scales trajectories to physical kilometers');
+assert(trueMinDist > 14000 && trueMinDist < 16000, `True scale Earth orbit size is in 10,000 km units (got ${trueMinDist.toFixed(1)})`);
+
+const trueMoonAttr = scene.moonOrbitLine.geometry.attributes.position;
+const trueMoonDist0 = Math.sqrt(trueMoonAttr.getX(0)**2 + trueMoonAttr.getY(0)**2 + trueMoonAttr.getZ(0)**2);
+assert(trueMoonDist0 > 35 && trueMoonDist0 < 42, `True scale Moon orbit size is in 10,000 km units (got ${trueMoonDist0.toFixed(1)})`);
+
+const truePerigeeDist = scene.perigeeMarker.position.distanceTo(scene.earthGroup.position);
+assert(truePerigeeDist > 35 && truePerigeeDist < 38, `True scale Perigee distance to Earth matches physical distance (got ${truePerigeeDist.toFixed(1)})`);
+
+console.log('  ✓ PASS: True scale mode scales both Earth and Moon trajectories to physical kilometers');
+
+// Test 7: Apsides Material Depth Test & Depth Write Configurations
+console.log('\nTest 7: Apsides Material Depth Configuration');
+const sphereMat = scene.perihelionMarker.children[0].material;
+assert(sphereMat.depthTest === true, 'Apsis sphere material has depthTest enabled');
+assert(sphereMat.depthWrite === false, 'Apsis sphere material has depthWrite disabled');
+
+const ringMat = scene.perihelionMarker.children[1].material;
+assert(ringMat.depthTest === true, 'Apsis ring material has depthTest enabled');
+assert(ringMat.depthWrite === false, 'Apsis ring material has depthWrite disabled');
+console.log('  ✓ PASS: Apsides materials use correct depthTest=true and depthWrite=false');
 
 console.log('\n===========================================');
 console.log('ALL ELLIPTICAL ORBIT TESTS PASSED SUCCESSFULLY!');
