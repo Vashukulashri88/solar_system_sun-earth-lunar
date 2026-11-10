@@ -277,6 +277,10 @@ export class UserInterface {
               <span>Orbit Paths & Nodes</span>
             </label>
             <label class="toggle-item">
+              <input type="checkbox" id="toggleMoonSunPath" checked>
+              <span>〰️ Moon's true path around Sun [T]</span>
+            </label>
+            <label class="toggle-item">
               <input type="checkbox" id="toggleApsides" checked>
               <span>🎯 Perihelion / Aphelion & Perigee</span>
             </label>
@@ -296,6 +300,27 @@ export class UserInterface {
               <input type="checkbox" id="toggleAtmosphere" checked>
               <span>Atmospheric Glow</span>
             </label>
+          </div>
+
+          <div id="moonSunPathControls" class="sub-controls-row">
+            <div class="sub-control-item">
+              <span class="sub-label">Trajectory Span:</span>
+              <select id="moonSunSpanSelect" class="hud-select-sm" title="Simulation time range sampled for Moon's heliocentric wave">
+                <option value="month" selected>±1 Month (Current Cycle)</option>
+                <option value="year">Full Year (13.4 Waves)</option>
+              </select>
+            </div>
+            <div class="sub-control-item">
+              <span class="sub-label">Wave Scale (Visual):</span>
+              <select id="moonSunScaleSelect" class="hud-select-sm" title="Proportional scaling of Moon's displacement from Earth">
+                <option value="true" selected>True Proportional (1:389, Concave)</option>
+                <option value="amplified">3× Amplified Wave (No Retrograde)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="card-notice">
+            <p>💡 <strong>Orbital Reality Note:</strong> Earth's orbit (<em>e</em>=0.0167) and the Moon's geocentric orbit (<em>e</em>≈0.055) are visually nearly perfect circles. The Moon's true path through space is a gentle wavy line around the Sun that is <strong>always concave toward the Sun</strong> (never looping backwards), because solar gravity on the Moon is ~2.2× stronger than Earth's.</p>
           </div>
         </div>
       </aside>
@@ -719,6 +744,37 @@ export class UserInterface {
     }
 
     toggleOrbits.addEventListener('change', () => this.scene.showOrbits = toggleOrbits.checked);
+    const toggleMoonSunPath = document.getElementById('toggleMoonSunPath');
+    const moonSunSpanSelect = document.getElementById('moonSunSpanSelect');
+    const moonSunScaleSelect = document.getElementById('moonSunScaleSelect');
+    const moonSunControls = document.getElementById('moonSunPathControls');
+
+    if (toggleMoonSunPath) {
+      toggleMoonSunPath.addEventListener('change', () => {
+        this.scene.showMoonSunPath = toggleMoonSunPath.checked;
+        if (moonSunControls) {
+          moonSunControls.style.opacity = toggleMoonSunPath.checked ? '1' : '0.4';
+          moonSunControls.style.pointerEvents = toggleMoonSunPath.checked ? 'auto' : 'none';
+        }
+      });
+    }
+
+    if (moonSunSpanSelect) {
+      moonSunSpanSelect.addEventListener('change', (e) => {
+        this.scene.moonSunPathSpan = e.target.value;
+        const curDate = (this.scene.lastCelestialState && this.scene.lastCelestialState.date) || new Date();
+        this.scene.updateMoonSunTrajectory(curDate);
+      });
+    }
+
+    if (moonSunScaleSelect) {
+      moonSunScaleSelect.addEventListener('change', (e) => {
+        this.scene.moonSunPathScale = e.target.value;
+        const curDate = (this.scene.lastCelestialState && this.scene.lastCelestialState.date) || new Date();
+        this.scene.updateMoonSunTrajectory(curDate);
+      });
+    }
+
     const toggleApsides = document.getElementById('toggleApsides');
     if (toggleApsides) {
       toggleApsides.addEventListener('change', () => this.scene.showApsides = toggleApsides.checked);
@@ -855,6 +911,19 @@ export class UserInterface {
           if (mToggle) {
             mToggle.checked = !mToggle.checked;
             if (this.labels) this.labels.showMoonLabels = mToggle.checked;
+          }
+          break;
+        }
+        case 'KeyT': {
+          const tToggle = document.getElementById('toggleMoonSunPath');
+          if (tToggle) {
+            tToggle.checked = !tToggle.checked;
+            this.scene.showMoonSunPath = tToggle.checked;
+            const ctrl = document.getElementById('moonSunPathControls');
+            if (ctrl) {
+              ctrl.style.opacity = tToggle.checked ? '1' : '0.4';
+              ctrl.style.pointerEvents = tToggle.checked ? 'auto' : 'none';
+            }
           }
           break;
         }

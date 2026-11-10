@@ -16,12 +16,16 @@ import { ASTRONOMICAL_CONSTANTS, Astronomy } from './ephemeris.js';
 
 const EARTH_ORBIT_SEGMENTS = 256;
 const MOON_ORBIT_SEGMENTS = 192;
+const MOON_SUN_MAX_POINTS = 5000;
 
 export class SolarSystemScene {
   constructor(container) {
     this.container = container;
     this.scaleMode = 'visual'; // 'visual' | 'true'
     this.showOrbits = true;
+    this.showMoonSunPath = true;
+    this.moonSunPathSpan = 'month'; // 'month' (±1 month) | 'year' (full year)
+    this.moonSunPathScale = 'true'; // 'true' (1x true proportional) | 'amplified' (3x amplified wave)
     this.showApsides = true;
     this.showShadows = true;
     this.showGrid = true;
@@ -34,6 +38,10 @@ export class SolarSystemScene {
     this.lastCelestialState = null;
     this.lastOrbitSampleTime = null;
     this.lastOrbitScaleMode = null;
+    this.lastMoonSunSampleTime = null;
+    this.lastMoonSunScaleMode = null;
+    this.lastMoonSunSpan = null;
+    this.lastMoonSunScale = null;
 
     this.maxTextureSize = getMaxTextureSize();
 
@@ -326,11 +334,38 @@ export class SolarSystemScene {
     );
     this.scene.add(this.moonOrbitLine);
 
+    // Moon Heliocentric Trajectory Line around Sun (gentle wavy line through space)
+    const moonSunGeom = new THREE.BufferGeometry();
+    const moonSunPosAttr = new THREE.BufferAttribute(new Float32Array(MOON_SUN_MAX_POINTS * 3), 3);
+    moonSunGeom.setAttribute('position', moonSunPosAttr);
+    this.moonSunTrajectoryLine = new THREE.Line(
+      moonSunGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.85
+      })
+    );
+    this.scene.add(this.moonSunTrajectoryLine);
+
+    // Current Moon position marker along the heliocentric path
+    const dotGeom = new THREE.SphereGeometry(0.12, 16, 16);
+    const dotMat = new THREE.MeshBasicMaterial({
+      color: 0xfde047,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: true,
+      depthWrite: false
+    });
+    this.moonTruePositionMarker = new THREE.Mesh(dotGeom, dotMat);
+    this.scene.add(this.moonTruePositionMarker);
+
     // Apsides Visual Markers & Labels (Perihelion, Aphelion, Perigee, Apogee)
     this.createApsidesMarkers();
 
     // Populate initial real trajectories
     this.updateOrbitGeometries(new Date());
+    this.updateMoonSunTrajectory(new Date());
 
     // Ecliptic Plane Grid
     this.eclipticGrid = new THREE.GridHelper(60, 30, 0x1e3a8a, 0x0f172a);
@@ -647,6 +682,79 @@ export class SolarSystemScene {
   }
 
   /**
+   * Samples Moon heliocentric positions relative to the Sun over a configurable span
+   * centered on the simulated date to trace the gentle wavy prograde path through space.
+   * @param {Date} date - Center date of the simulated epoch
+   */
+  updateMoonSunTrajectory(date = new Date()) {
+    if (!this.moonSunTrajectoryLine) return;
+    const isVisual = (this.scaleMode === 'visual');
+    const t0 = date.getTime();
+
+    let spanDays;
+    let stepHours;
+    if (this.moonSunPathSpan === 'year') {
+      spanDays = 365.256363;
+      stepHours = 2.0; // ~4384 points
+    } else {
+      // Default ±1 month (~60 days)
+      spanDays = 60.0;
+      stepHours = 1.0; // 1441 points
+    }
+
+    const spanMs = spanDays * 86400000;
+    const stepMs = stepHours * 3600000;
+    const totalPoints = Math.min(MOON_SUN_MAX_POINTS, Math.floor(spanMs / stepMs) + 1);
+
+    const posAttr = this.moonSunTrajectoryLine.geometry.attributes.position;
+    const array = posAttr.array;
+
+    const earthScaleFactor = isVisual ? 32.0 : (ASTRONOMICAL_CONSTANTS.AU_KM / 10000.0);
+    const isAmplified = isVisual && (this.moonSunPathScale === 'amplified');
+    const multiplier = isAmplified ? 3.0 : 1.0;
+
+    const halfSpanMs = spanMs / 2.0;
+
+    for (let i = 0; i < totalPoints; i++) {
+      const sampleMs = t0 - halfSpanMs + (i * stepMs);
+      const sampleDate = new Date(sampleMs);
+
+      let x, y, z;
+      if (isAmplified) {
+        // Earth heliocentric + amplified Moon geocentric offset (strictly prograde, zero retrograde loops)
+        const he = Astronomy.HelioVector(Astronomy.Body.Earth, sampleDate);
+        const gm = Astronomy.GeoVector(Astronomy.Body.Moon, sampleDate, false);
+        const eecl = Astronomy.Ecliptic(he);
+        const gmecl = Astronomy.Ecliptic(gm);
+
+        const cx = eecl.vec.x + multiplier * gmecl.vec.x;
+        const cy = eecl.vec.y + multiplier * gmecl.vec.y;
+        const cz = eecl.vec.z + multiplier * gmecl.vec.z;
+
+        x = earthScaleFactor * cx;
+        y = earthScaleFactor * cz;
+        z = -earthScaleFactor * cy;
+      } else {
+        // True physical heliocentric trajectory (strictly concave toward Sun everywhere, 1:389 proportions)
+        const hm = Astronomy.HelioVector(Astronomy.Body.Moon, sampleDate);
+        const mecl = Astronomy.Ecliptic(hm);
+
+        x = earthScaleFactor * mecl.vec.x;
+        y = earthScaleFactor * mecl.vec.z;
+        z = -earthScaleFactor * mecl.vec.y;
+      }
+
+      array[i * 3] = x;
+      array[i * 3 + 1] = y;
+      array[i * 3 + 2] = z;
+    }
+
+    posAttr.needsUpdate = true;
+    this.moonSunTrajectoryLine.geometry.setDrawRange(0, totalPoints);
+    this.moonSunTrajectoryLine.geometry.computeBoundingSphere();
+  }
+
+  /**
    * Updates all 3D scene objects with real astronomical ephemeris state
    * @param {Object} state - Celestial state from ephemeris.js
    * @param {number} timeSeconds - Elapsed seconds for animations
@@ -663,6 +771,19 @@ export class SolarSystemScene {
       this.updateOrbitGeometries(state.date || new Date());
       this.lastOrbitSampleTime = timeMs;
       this.lastOrbitScaleMode = this.scaleMode;
+    }
+
+    const moonSunDeltaHours = this.lastMoonSunSampleTime ? Math.abs(timeMs - this.lastMoonSunSampleTime) / 3600000 : Infinity;
+    const moonSunConfigChanged = (this.lastMoonSunScaleMode !== this.scaleMode) ||
+                                 (this.lastMoonSunSpan !== this.moonSunPathSpan) ||
+                                 (this.lastMoonSunScale !== this.moonSunPathScale);
+
+    if (!this.lastMoonSunSampleTime || moonSunConfigChanged || moonSunDeltaHours > 6.0) {
+      this.updateMoonSunTrajectory(state.date || new Date());
+      this.lastMoonSunSampleTime = timeMs;
+      this.lastMoonSunScaleMode = this.scaleMode;
+      this.lastMoonSunSpan = this.moonSunPathSpan;
+      this.lastMoonSunScale = this.moonSunPathScale;
     }
 
     // Sun Shader Time Uniform
@@ -949,6 +1070,41 @@ export class SolarSystemScene {
     this.earthOrbitLine.visible = this.showOrbits;
     this.moonOrbitLine.visible = this.showOrbits;
     this.lineOfNodes.visible = this.showOrbits;
+
+    const showMoonSun = this.showOrbits && (this.showMoonSunPath !== false);
+    if (this.moonSunTrajectoryLine) {
+      this.moonSunTrajectoryLine.visible = showMoonSun;
+    }
+    if (this.moonTruePositionMarker) {
+      this.moonTruePositionMarker.visible = showMoonSun;
+      const markerScale = isVisual ? 1.0 : 25.0;
+      this.moonTruePositionMarker.scale.set(markerScale, markerScale, markerScale);
+
+      const isAmplified = isVisual && (this.moonSunPathScale === 'amplified');
+      const earthScaleFactor = isVisual ? 32.0 : (ASTRONOMICAL_CONSTANTS.AU_KM / 10000.0);
+      const curDate = state.date || new Date();
+
+      if (isAmplified) {
+        const he = Astronomy.HelioVector(Astronomy.Body.Earth, curDate);
+        const gm = Astronomy.GeoVector(Astronomy.Body.Moon, curDate, false);
+        const eecl = Astronomy.Ecliptic(he);
+        const gmecl = Astronomy.Ecliptic(gm);
+        this.moonTruePositionMarker.position.set(
+          earthScaleFactor * (eecl.vec.x + 3.0 * gmecl.vec.x),
+          earthScaleFactor * (eecl.vec.z + 3.0 * gmecl.vec.z),
+          -earthScaleFactor * (eecl.vec.y + 3.0 * gmecl.vec.y)
+        );
+      } else {
+        const hm = Astronomy.HelioVector(Astronomy.Body.Moon, curDate);
+        const mecl = Astronomy.Ecliptic(hm);
+        this.moonTruePositionMarker.position.set(
+          earthScaleFactor * mecl.vec.x,
+          earthScaleFactor * mecl.vec.z,
+          -earthScaleFactor * mecl.vec.y
+        );
+      }
+    }
+
     const showApsides = this.showOrbits && (this.showApsides !== false);
     if (this.perihelionMarker) this.perihelionMarker.visible = showApsides;
     if (this.aphelionMarker) this.aphelionMarker.visible = showApsides;

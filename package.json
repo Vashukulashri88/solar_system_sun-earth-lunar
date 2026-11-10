@@ -5,7 +5,7 @@
   "main": "src/ephemeris.js",
   "type": "module",
   "scripts": {
-    "test": "node tests/test_ephemeris.js && node tests/test_integration.js && node tests/test_v2_features.js && node tests/test_round2_review.js && node tests/test_elliptical_orbits.js && node tests/test_server.js",
+    "test": "node tests/test_ephemeris.js && node tests/test_integration.js && node tests/test_v2_features.js && node tests/test_round2_review.js && node tests/test_elliptical_orbits.js && node tests/test_moon_true_path.js && node tests/test_server.js",
     "start": "node server.js"
   },
   "dependencies": {
