@@ -12,13 +12,17 @@ import {
   createSunCoronaMaterial
 } from './shaders.js';
 import { CloudManager } from './clouds.js';
-import { ASTRONOMICAL_CONSTANTS } from './ephemeris.js';
+import { ASTRONOMICAL_CONSTANTS, Astronomy } from './ephemeris.js';
+
+const EARTH_ORBIT_SEGMENTS = 256;
+const MOON_ORBIT_SEGMENTS = 192;
 
 export class SolarSystemScene {
   constructor(container) {
     this.container = container;
     this.scaleMode = 'visual'; // 'visual' | 'true'
     this.showOrbits = true;
+    this.showApsides = true;
     this.showShadows = true;
     this.showGrid = true;
     this.showLabels = true;
@@ -28,6 +32,8 @@ export class SolarSystemScene {
     this.useSeasonalTextures = true;
     this.activeMonthIndex = -1;
     this.lastCelestialState = null;
+    this.lastOrbitSampleTime = null;
+    this.lastOrbitScaleMode = null;
 
     this.maxTextureSize = getMaxTextureSize();
 
@@ -40,10 +46,17 @@ export class SolarSystemScene {
     this.createOrbitsAndGuides();
     this.setupLighting();
 
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onWindowResize.bind(this));
+    }
   }
 
   loadSafeTexture(url, colorSpace = null) {
+    if (typeof document === 'undefined') {
+      const dummyTex = new THREE.DataTexture(new Uint8Array(4), 1, 1);
+      if (colorSpace) dummyTex.colorSpace = colorSpace;
+      return dummyTex;
+    }
     const tex = this.textureLoader.load(url, (loaded) => {
       clampTextureSize(loaded, this.maxTextureSize);
     });
@@ -84,23 +97,22 @@ export class SolarSystemScene {
   initThree() {
     this.scene = new THREE.Scene();
 
-    this.camera = new THREE.PerspectiveCamera(
-      45,
-      this.container.clientWidth / this.container.clientHeight,
-      0.1,
-      100000
-    );
+    const w = (this.container && this.container.clientWidth) || 1280;
+    const h = (this.container && this.container.clientHeight) || 720;
+    this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100000);
     this.camera.position.set(0, 15, 35);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, logarithmicDepthBuffer: true });
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if (typeof document !== 'undefined') {
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, logarithmicDepthBuffer: true });
+      this.renderer.setSize(w, h);
+      this.renderer.setPixelRatio(Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2));
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.1;
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    this.container.appendChild(this.renderer.domElement);
+      this.container.appendChild(this.renderer.domElement);
+    }
   }
 
   createStarfield() {
@@ -164,7 +176,7 @@ export class SolarSystemScene {
     this.scene.add(this.sunGroup);
 
     const sunCanvas = createSunCanvas(1024, 512);
-    this.sunTexture = new THREE.CanvasTexture(sunCanvas);
+    this.sunTexture = sunCanvas ? new THREE.CanvasTexture(sunCanvas) : new THREE.DataTexture(new Uint8Array(4), 1, 1);
     this.sunMaterial = createSunMaterial(this.sunTexture);
 
     // Sun Sphere
@@ -286,34 +298,39 @@ export class SolarSystemScene {
   }
 
   createOrbitsAndGuides() {
-    // Earth Orbit Path around Sun
+    // Earth Orbit Path around Sun (true sampled Keplerian ellipse)
     const earthOrbitGeom = new THREE.BufferGeometry();
-    const pts = [];
-    const segments = 128;
-    for (let i = 0; i <= segments; i++) {
-      const theta = (i / segments) * Math.PI * 2;
-      pts.push(new THREE.Vector3(Math.cos(theta), 0, -Math.sin(theta)));
-    }
-    earthOrbitGeom.setFromPoints(pts);
+    const earthPosAttr = new THREE.BufferAttribute(new Float32Array((EARTH_ORBIT_SEGMENTS + 1) * 3), 3);
+    earthOrbitGeom.setAttribute('position', earthPosAttr);
     this.earthOrbitLine = new THREE.Line(
       earthOrbitGeom,
-      new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.4 })
+      new THREE.LineBasicMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.55
+      })
     );
     this.scene.add(this.earthOrbitLine);
 
-    // Moon Orbit Path around Earth
+    // Moon Orbit Path around Earth (true sampled perturbed inclined ellipse)
     const moonOrbitGeom = new THREE.BufferGeometry();
-    const moonPts = [];
-    for (let i = 0; i <= 96; i++) {
-      const theta = (i / 96) * Math.PI * 2;
-      moonPts.push(new THREE.Vector3(Math.cos(theta), 0, -Math.sin(theta)));
-    }
-    moonOrbitGeom.setFromPoints(moonPts);
+    const moonPosAttr = new THREE.BufferAttribute(new Float32Array((MOON_ORBIT_SEGMENTS + 1) * 3), 3);
+    moonOrbitGeom.setAttribute('position', moonPosAttr);
     this.moonOrbitLine = new THREE.Line(
       moonOrbitGeom,
-      new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.6 })
+      new THREE.LineBasicMaterial({
+        color: 0xa5b4fc,
+        transparent: true,
+        opacity: 0.70
+      })
     );
     this.scene.add(this.moonOrbitLine);
+
+    // Apsides Visual Markers & Labels (Perihelion, Aphelion, Perigee, Apogee)
+    this.createApsidesMarkers();
+
+    // Populate initial real trajectories
+    this.updateOrbitGeometries(new Date());
 
     // Ecliptic Plane Grid
     this.eclipticGrid = new THREE.GridHelper(60, 30, 0x1e3a8a, 0x0f172a);
@@ -357,6 +374,230 @@ export class SolarSystemScene {
     this.moonGroup.add(this.moonUmbraCone);
   }
 
+  createApsidesMarkers() {
+    this.perihelionMarker = this.createApsisMarker(0xf59e0b, 0.28, 'PERIHELION', 'Earth Closest to Sun (~147.1M km)');
+    this.aphelionMarker = this.createApsisMarker(0x38bdf8, 0.28, 'APHELION', 'Earth Farthest from Sun (~152.1M km)');
+    this.perigeeMarker = this.createApsisMarker(0x34d399, 0.16, 'PERIGEE', 'Moon Closest to Earth (~363k km)');
+    this.apogeeMarker = this.createApsisMarker(0xa78bfa, 0.16, 'APOGEE', 'Moon Farthest from Earth (~405k km)');
+
+    this.scene.add(this.perihelionMarker);
+    this.scene.add(this.aphelionMarker);
+    this.scene.add(this.perigeeMarker);
+    this.scene.add(this.apogeeMarker);
+
+    this.lastPerigeeRel = new THREE.Vector3();
+    this.lastApogeeRel = new THREE.Vector3();
+  }
+
+  createApsisMarker(colorHex, radius, title, subtitle) {
+    const group = new THREE.Group();
+
+    // Central glowing sphere
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 16, 16),
+      new THREE.MeshBasicMaterial({ color: colorHex, depthTest: false, transparent: true, opacity: 0.95 })
+    );
+    group.add(sphere);
+
+    // Flat ring in ecliptic plane
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(radius * 1.4, radius * 2.2, 32),
+      new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    // Billboard Text Sprite
+    if (typeof document !== 'undefined') {
+      const sprite = this.createApsisLabelSprite(title, subtitle, colorHex);
+      sprite.position.y = radius + 1.2;
+      group.add(sprite);
+      group.userData.sprite = sprite;
+    }
+
+    group.userData.baseRadius = radius;
+    return group;
+  }
+
+  createApsisLabelSprite(title, subtitle, colorHex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    const colorHexStr = '#' + colorHex.toString(16).padStart(6, '0');
+
+    // Rounded pill background
+    const r = 16, w = 376, h = 96, x = 4, y = 16;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.strokeStyle = colorHexStr;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Title
+    ctx.fillStyle = colorHexStr;
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, canvas.width / 2, y + 40);
+
+    // Subtitle
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(subtitle, canvas.width / 2, y + 74);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(3.2, 1.07, 1);
+    return sprite;
+  }
+
+  /**
+   * Samples actual orbital positions from Astronomy Engine over a full revolution
+   * centered on the simulated date to trace the real Keplerian / perturbed ellipses.
+   * @param {Date} date - Center date of the simulated epoch
+   */
+  updateOrbitGeometries(date = new Date()) {
+    const isVisual = (this.scaleMode === 'visual');
+    const t0 = date.getTime();
+
+    // 1. SAMPLE EARTH HELIOCENTRIC ORBIT PATH (1 Keplerian year centered on current epoch)
+    const earthPeriodMs = 365.256363 * 86400000;
+    const earthPosAttr = this.earthOrbitLine.geometry.attributes.position;
+    const earthArray = earthPosAttr.array;
+    const earthScaleFactor = isVisual ? 32.0 : (ASTRONOMICAL_CONSTANTS.AU_KM / 10000.0);
+
+    let minEarthDist = Infinity;
+    let maxEarthDist = -Infinity;
+    let perihelionX = 0, perihelionY = 0, perihelionZ = 0;
+    let aphelionX = 0, aphelionY = 0, aphelionZ = 0;
+
+    for (let i = 0; i <= EARTH_ORBIT_SEGMENTS; i++) {
+      let x, y, z;
+      if (i === EARTH_ORBIT_SEGMENTS) {
+        // Seamlessly close the loop
+        x = earthArray[0];
+        y = earthArray[1];
+        z = earthArray[2];
+      } else {
+        const dt = (i / EARTH_ORBIT_SEGMENTS - 0.5) * earthPeriodMs;
+        const sampleDate = new Date(t0 + dt);
+        const hv = Astronomy.HelioVector(Astronomy.Body.Earth, sampleDate);
+        const ecl = Astronomy.Ecliptic(hv);
+        x = earthScaleFactor * ecl.vec.x;
+        y = earthScaleFactor * ecl.vec.z;
+        z = -earthScaleFactor * ecl.vec.y;
+
+        const distAU = Math.sqrt(ecl.vec.x * ecl.vec.x + ecl.vec.y * ecl.vec.y + ecl.vec.z * ecl.vec.z);
+        if (distAU < minEarthDist) {
+          minEarthDist = distAU;
+          perihelionX = x;
+          perihelionY = y;
+          perihelionZ = z;
+        }
+        if (distAU > maxEarthDist) {
+          maxEarthDist = distAU;
+          aphelionX = x;
+          aphelionY = y;
+          aphelionZ = z;
+        }
+      }
+      earthArray[i * 3] = x;
+      earthArray[i * 3 + 1] = y;
+      earthArray[i * 3 + 2] = z;
+    }
+    earthPosAttr.needsUpdate = true;
+    this.earthOrbitLine.geometry.computeBoundingSphere();
+
+    // Position Earth Apsis Markers
+    if (this.perihelionMarker) {
+      this.perihelionMarker.position.set(perihelionX, perihelionY, perihelionZ);
+      const mScale = isVisual ? 1.0 : 200.0;
+      this.perihelionMarker.scale.set(mScale, mScale, mScale);
+    }
+    if (this.aphelionMarker) {
+      this.aphelionMarker.position.set(aphelionX, aphelionY, aphelionZ);
+      const mScale = isVisual ? 1.0 : 200.0;
+      this.aphelionMarker.scale.set(mScale, mScale, mScale);
+    }
+
+    // 2. SAMPLE MOON GEOCENTRIC ORBIT PATH (~27.32 days centered on current epoch)
+    const moonPeriodMs = 27.321661 * 86400000;
+    const moonPosAttr = this.moonOrbitLine.geometry.attributes.position;
+    const moonArray = moonPosAttr.array;
+    const moonFactor = isVisual
+      ? (7.5 / ASTRONOMICAL_CONSTANTS.MOON_SEMI_MAJOR_AXIS_KM) * ASTRONOMICAL_CONSTANTS.AU_KM
+      : (ASTRONOMICAL_CONSTANTS.AU_KM / 10000.0);
+
+    let minMoonDist = Infinity;
+    let maxMoonDist = -Infinity;
+    let perigeeRelX = 0, perigeeRelY = 0, perigeeRelZ = 0;
+    let apogeeRelX = 0, apogeeRelY = 0, apogeeRelZ = 0;
+
+    for (let j = 0; j <= MOON_ORBIT_SEGMENTS; j++) {
+      let relX, relY, relZ;
+      if (j === MOON_ORBIT_SEGMENTS) {
+        relX = moonArray[0];
+        relY = moonArray[1];
+        relZ = moonArray[2];
+      } else {
+        const dt = (j / MOON_ORBIT_SEGMENTS - 0.5) * moonPeriodMs;
+        const sampleDate = new Date(t0 + dt);
+        const gv = Astronomy.GeoVector(Astronomy.Body.Moon, sampleDate, false);
+        const mecl = Astronomy.Ecliptic(gv);
+        relX = moonFactor * mecl.vec.x;
+        relY = moonFactor * mecl.vec.z;
+        relZ = -moonFactor * mecl.vec.y;
+
+        const distKm = Math.sqrt(mecl.vec.x * mecl.vec.x + mecl.vec.y * mecl.vec.y + mecl.vec.z * mecl.vec.z) * ASTRONOMICAL_CONSTANTS.AU_KM;
+        if (distKm < minMoonDist) {
+          minMoonDist = distKm;
+          perigeeRelX = relX;
+          perigeeRelY = relY;
+          perigeeRelZ = relZ;
+        }
+        if (distKm > maxMoonDist) {
+          maxMoonDist = distKm;
+          apogeeRelX = relX;
+          apogeeRelY = relY;
+          apogeeRelZ = relZ;
+        }
+      }
+      moonArray[j * 3] = relX;
+      moonArray[j * 3 + 1] = relY;
+      moonArray[j * 3 + 2] = relZ;
+    }
+    moonPosAttr.needsUpdate = true;
+    this.moonOrbitLine.geometry.computeBoundingSphere();
+
+    // Cache Lunar Apsis Relative Vectors
+    this.lastPerigeeRel.set(perigeeRelX, perigeeRelY, perigeeRelZ);
+    this.lastApogeeRel.set(apogeeRelX, apogeeRelY, apogeeRelZ);
+
+    if (this.perigeeMarker) {
+      const mScale = isVisual ? 1.0 : 2.5;
+      this.perigeeMarker.scale.set(mScale, mScale, mScale);
+    }
+    if (this.apogeeMarker) {
+      const mScale = isVisual ? 1.0 : 2.5;
+      this.apogeeMarker.scale.set(mScale, mScale, mScale);
+    }
+  }
+
   /**
    * Updates all 3D scene objects with real astronomical ephemeris state
    * @param {Object} state - Celestial state from ephemeris.js
@@ -364,6 +605,17 @@ export class SolarSystemScene {
    */
   update(state, timeSeconds = 0) {
     const isVisual = (this.scaleMode === 'visual');
+
+    // Dynamically sample real orbital trajectories when needed (or on scale mode change)
+    const timeMs = state.date ? state.date.getTime() : Date.now();
+    const scaleChanged = (this.lastOrbitScaleMode !== this.scaleMode);
+    const timeDeltaHours = this.lastOrbitSampleTime ? Math.abs(timeMs - this.lastOrbitSampleTime) / 3600000 : Infinity;
+
+    if (scaleChanged || timeDeltaHours > 3 || !this.lastOrbitSampleTime) {
+      this.updateOrbitGeometries(state.date || new Date());
+      this.lastOrbitSampleTime = timeMs;
+      this.lastOrbitScaleMode = this.scaleMode;
+    }
 
     // Sun Shader Time Uniform
     if (this.sunMaterial.uniforms) {
@@ -413,21 +665,20 @@ export class SolarSystemScene {
         earthPos.z + moonRelZ
       );
 
-      // Scale Earth Orbit Line to match current orbit
-      this.earthOrbitLine.scale.set(32.0, 32.0, 32.0);
+      // Earth Orbit Line is in world heliocentric coordinates (centered at Sun)
+      this.earthOrbitLine.scale.set(1.0, 1.0, 1.0);
       this.earthOrbitLine.position.set(0, 0, 0);
+      this.earthOrbitLine.rotation.set(0, 0, 0);
 
-      // Scale Moon Orbit Line around Earth
-      this.moonOrbitLine.scale.set(moonOrbitalRadius, moonOrbitalRadius, moonOrbitalRadius);
+      // Moon Orbit Line vertices are relative to Earth in ecliptic frame
+      this.moonOrbitLine.scale.set(1.0, 1.0, 1.0);
       this.moonOrbitLine.position.copy(earthPos);
-
-      // Rotate Moon Orbit Line according to Ascending Node (Omega) and Inclination (5.145°)
-      this.moonOrbitLine.rotation.order = 'YXZ';
-      this.moonOrbitLine.rotation.set(5.145 * (Math.PI / 180), state.moon.ascendingNodeDeg * (Math.PI / 180), 0);
+      this.moonOrbitLine.rotation.set(0, 0, 0);
 
       // Position Line of Nodes
       this.lineOfNodes.position.copy(earthPos);
       this.lineOfNodes.rotation.y = state.moon.ascendingNodeDeg * (Math.PI / 180);
+      this.lineOfNodes.scale.set(1.0, 1.0, 1.0);
 
     } else {
       // 100% TRUE PHYSICAL SCALE (1 unit = 10,000 km)
@@ -454,16 +705,18 @@ export class SolarSystemScene {
         earthPos.z - moonDistUnits * Math.cos(moonLatRad) * Math.sin(moonLongRad)
       );
 
-      this.earthOrbitLine.scale.set(earthDistUnits, earthDistUnits, earthDistUnits);
+      this.earthOrbitLine.scale.set(1.0, 1.0, 1.0);
       this.earthOrbitLine.position.set(0, 0, 0);
+      this.earthOrbitLine.rotation.set(0, 0, 0);
 
-      this.moonOrbitLine.scale.set(moonDistUnits, moonDistUnits, moonDistUnits);
+      this.moonOrbitLine.scale.set(1.0, 1.0, 1.0);
       this.moonOrbitLine.position.copy(earthPos);
-      this.moonOrbitLine.rotation.order = 'YXZ';
-      this.moonOrbitLine.rotation.set(5.145 * (Math.PI / 180), state.moon.ascendingNodeDeg * (Math.PI / 180), 0);
+      this.moonOrbitLine.rotation.set(0, 0, 0);
 
       this.lineOfNodes.position.copy(earthPos);
       this.lineOfNodes.rotation.y = state.moon.ascendingNodeDeg * (Math.PI / 180);
+      const nodeScale = (moonDistUnits / 7.5);
+      this.lineOfNodes.scale.set(nodeScale, nodeScale, nodeScale);
     }
 
     // Update Mesh Positions and Scales
@@ -628,10 +881,31 @@ export class SolarSystemScene {
       this.moonUmbraCone.scale.set(moonScale / 0.27, moonScale / 0.27, (374000 / 10000) / 8);
     }
 
+    // Update Lunar Apsis Markers world positions (follow Earth through space)
+    if (this.perigeeMarker && this.lastPerigeeRel) {
+      this.perigeeMarker.position.set(
+        earthPos.x + this.lastPerigeeRel.x,
+        earthPos.y + this.lastPerigeeRel.y,
+        earthPos.z + this.lastPerigeeRel.z
+      );
+    }
+    if (this.apogeeMarker && this.lastApogeeRel) {
+      this.apogeeMarker.position.set(
+        earthPos.x + this.lastApogeeRel.x,
+        earthPos.y + this.lastApogeeRel.y,
+        earthPos.z + this.lastApogeeRel.z
+      );
+    }
+
     // Visibility toggles
     this.earthOrbitLine.visible = this.showOrbits;
     this.moonOrbitLine.visible = this.showOrbits;
     this.lineOfNodes.visible = this.showOrbits;
+    const showApsides = this.showOrbits && (this.showApsides !== false);
+    if (this.perihelionMarker) this.perihelionMarker.visible = showApsides;
+    if (this.aphelionMarker) this.aphelionMarker.visible = showApsides;
+    if (this.perigeeMarker) this.perigeeMarker.visible = showApsides;
+    if (this.apogeeMarker) this.apogeeMarker.visible = showApsides;
     this.eclipticGrid.visible = this.showGrid;
     this.vernalEquinoxArrow.visible = this.showGrid;
     this.axisHelper.visible = this.showLabels;
@@ -653,10 +927,13 @@ export class SolarSystemScene {
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
+    if (this.renderer) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   onWindowResize() {
+    if (!this.container || !this.renderer) return;
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
     this.camera.aspect = width / height;

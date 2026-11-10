@@ -277,6 +277,10 @@ export class UserInterface {
               <span>Orbit Paths & Nodes</span>
             </label>
             <label class="toggle-item">
+              <input type="checkbox" id="toggleApsides" checked>
+              <span>🎯 Perihelion / Aphelion & Perigee</span>
+            </label>
+            <label class="toggle-item">
               <input type="checkbox" id="toggleShadows" checked>
               <span>Shadow Umbra Cones</span>
             </label>
@@ -715,6 +719,10 @@ export class UserInterface {
     }
 
     toggleOrbits.addEventListener('change', () => this.scene.showOrbits = toggleOrbits.checked);
+    const toggleApsides = document.getElementById('toggleApsides');
+    if (toggleApsides) {
+      toggleApsides.addEventListener('change', () => this.scene.showApsides = toggleApsides.checked);
+    }
     toggleShadows.addEventListener('change', () => this.scene.showShadows = toggleShadows.checked);
     toggleGrid.addEventListener('change', () => this.scene.showGrid = toggleGrid.checked);
     toggleAxis.addEventListener('change', () => this.scene.showLabels = toggleAxis.checked);

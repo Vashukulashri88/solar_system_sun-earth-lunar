@@ -525,6 +525,7 @@ export function createMoonCanvas(width = 2048, height = 1024) {
  * Creates Sun Photosphere Texture with granulation convection cells and sunspots
  */
 export function createSunCanvas(width = 1024, height = 512) {
+  if (typeof document === 'undefined') return null;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;

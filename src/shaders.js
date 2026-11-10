@@ -339,6 +339,9 @@ export function createSunMaterial(sunTexture) {
  * Sun Corona Radial Glow Sprite Material
  */
 export function createSunCoronaMaterial() {
+  if (typeof document === 'undefined') {
+    return new THREE.SpriteMaterial({ transparent: true });
+  }
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
